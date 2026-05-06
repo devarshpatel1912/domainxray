@@ -560,6 +560,5 @@ def api_compare(domain1, domain2):
     return jsonify({'domain1': data1, 'domain2': data2})
 
 
-
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
