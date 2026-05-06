@@ -6,3 +6,4 @@ python-whois
 python-Wappalyzer
 setuptools
 wheel
+ipwhois
