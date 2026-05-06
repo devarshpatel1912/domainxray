@@ -1,0 +1,10 @@
+flask>=3.0
+python-whois
+dnspython
+requests
+ipwhois
+fpdf2
+python-Wappalyzer
+playwright
+Flask
+gunicorn

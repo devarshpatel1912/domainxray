@@ -1,0 +1,1134 @@
+{% extends "base.html" %}
+{% block title %}{{ domain }} — DomainXray{% endblock %}
+
+{% block content %}
+<div class="app-container">
+    <!-- Top Navbar -->
+    <nav class="navbar">
+        <a href="/" class="nav-logo">
+            <div class="logo-icon-sm">
+                <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+                    <circle cx="24" cy="24" r="20" stroke="url(#grad2)" stroke-width="2.5" fill="none"/>
+                    <circle cx="24" cy="24" r="12" stroke="url(#grad2)" stroke-width="1.5" fill="none" opacity="0.6"/>
+                    <circle cx="24" cy="24" r="4" fill="url(#grad2)"/>
+                    <defs>
+                        <linearGradient id="grad2" x1="0" y1="0" x2="48" y2="48">
+                            <stop offset="0%" stop-color="#06b6d4"/>
+                            <stop offset="100%" stop-color="#8b5cf6"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+            </div>
+            <span class="nav-brand">Domain<span class="accent">Xray</span></span>
+        </a>
+        
+        <form class="nav-search" action="/scan" method="POST">
+            <svg class="search-icon-sm" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input type="text" name="domain" value="{{ domain }}" placeholder="Search domain...">
+            <button type="button" class="clear-input" onclick="this.previousElementSibling.value=''">×</button>
+        </form>
+        
+        <div class="nav-actions">
+            <button class="nav-btn theme-toggle-btn" title="Toggle Theme" onclick="toggleTheme()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+                </svg>
+            </button>
+            <button class="scan-btn nav-scan-btn" onclick="document.querySelector('.nav-search').submit()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="12" y1="8" x2="12" y2="16"/>
+                    <line x1="8" y1="12" x2="16" y2="12"/>
+                </svg>
+                Scan
+            </button>
+        </div>
+    </nav>
+    
+    <!-- Domain Header -->
+    <header class="domain-header" id="domainHeader">
+        <div class="domain-header-left">
+            <div class="domain-title-row">
+                <h1 class="domain-name" id="domainName">{{ domain }}</h1>
+                <button class="copy-btn" onclick="copyToClipboard({{ domain|tojson }})" title="Copy domain">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                </button>
+                <span class="status-badge" id="statusBadge">
+                    <span class="status-dot"></span>
+                    <span id="statusText">Scanning...</span>
+                </span>
+            </div>
+            <div class="domain-meta" id="domainMeta">
+                <span class="meta-item" id="metaLocation">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                    <span>Loading...</span>
+                </span>
+                <span class="meta-item" id="metaIP">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                        <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                        <line x1="6" y1="6" x2="6.01" y2="6"/>
+                        <line x1="6" y1="18" x2="6.01" y2="18"/>
+                    </svg>
+                    <span>—</span>
+                </span>
+                <span class="meta-item" id="metaAge">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <line x1="16" y1="2" x2="16" y2="6"/>
+                        <line x1="8" y1="2" x2="8" y2="6"/>
+                        <line x1="3" y1="10" x2="21" y2="10"/>
+                    </svg>
+                    <span>—</span>
+                </span>
+            </div>
+        </div>
+        <div class="domain-header-right">
+            <div class="header-action-btns">
+                <button class="header-action-btn watch-btn" id="watchBtn">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    Watch
+                </button>
+                <button class="header-action-btn compare-btn" onclick="openCompareModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+                    </svg>
+                    Compare
+                </button>
+                <button class="header-action-btn export-action-btn" onclick="openExportModal()">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Export
+                </button>
+            </div>
+            <div id="riskScoreArea">
+                <div class="risk-gauge-container" id="riskGauge" style="display: none;">
+                    <svg class="risk-gauge" width="80" height="80" viewBox="0 0 80 80">
+                        <circle cx="40" cy="40" r="34" fill="none" stroke="#1e293b" stroke-width="6"/>
+                        <circle cx="40" cy="40" r="34" fill="none" stroke-width="6" 
+                                stroke-linecap="round" id="riskCircle"
+                                stroke-dasharray="213.6" stroke-dashoffset="213.6"
+                                transform="rotate(-90 40 40)"/>
+                        <text x="40" y="36" text-anchor="middle" class="risk-score-text" id="riskScoreText">—</text>
+                        <text x="40" y="48" text-anchor="middle" class="risk-score-label">/ 100</text>
+                    </svg>
+                    <div class="risk-label">
+                        <span class="risk-title">Risk Score</span>
+                        <span class="risk-level" id="riskLevel">—</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Tab Navigation -->
+    <div class="tab-nav">
+        <button class="tab-btn active" data-tab="overview" onclick="switchTab('overview')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"/>
+                <rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/>
+                <rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            Overview
+        </button>
+        <button class="tab-btn" data-tab="dns" onclick="switchTab('dns')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+                <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+                <line x1="4" y1="4" x2="9" y2="9"/>
+            </svg>
+            DNS Records
+        </button>
+        <button class="tab-btn" data-tab="subdomains" onclick="switchTab('subdomains')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/>
+            </svg>
+            Subdomains
+        </button>
+        <button class="tab-btn" data-tab="ssl" onclick="switchTab('ssl')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <path d="M9 12l2 2 4-4"/>
+            </svg>
+            SSL Certificate
+        </button>
+        <button class="tab-btn" data-tab="security" onclick="switchTab('security')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            Security
+        </button>
+        <button class="tab-btn" data-tab="threatintel" onclick="switchTab('threatintel')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            Threat Intel
+        </button>
+        <button class="tab-btn" data-tab="mail" onclick="switchTab('mail')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            Mail Security
+        </button>
+        <button class="tab-btn" data-tab="monitoring" onclick="switchTab('monitoring')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            Monitoring
+        </button>
+        <button class="tab-btn" data-tab="history" onclick="switchTab('history')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            History
+        </button>
+        <button class="tab-btn" data-tab="techstack" onclick="switchTab('techstack')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+            </svg>
+            Tech Stack
+        </button>
+        <button class="tab-btn" data-tab="tools" onclick="switchTab('tools')">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+            Tools
+        </button>
+    </div>
+    
+    <!-- Tab Content Panels -->
+    <main class="tab-content">
+        
+        <!-- OVERVIEW TAB -->
+        <section class="tab-panel active" id="tab-overview">
+            <!-- AI Insights Banner -->
+            <div class="ai-insights-banner" id="aiInsightsBanner">
+                <div class="ai-insights-header">
+                    <div class="ai-insights-title-group">
+                        <div class="ai-icon">
+                            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+                            </svg>
+                        </div>
+                        <h2>AI Insights</h2>
+                        <span class="ai-badge">Powered by AI</span>
+                    </div>
+                    <span class="ai-generated-time" id="aiGeneratedTime">Loading...</span>
+                </div>
+                <div class="ai-insights-body" id="aiInsightsBody">
+                    <div class="ai-insights-grid">
+                        <div class="ai-col">
+                            <h4 class="ai-col-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                                RISK SUMMARY
+                            </h4>
+                            <div id="aiRiskSummary">
+                                <div class="info-skeleton"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+                            </div>
+                        </div>
+                        <div class="ai-col">
+                            <h4 class="ai-col-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                KEY ISSUES
+                            </h4>
+                            <div id="aiKeyIssues">
+                                <div class="info-skeleton"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+                            </div>
+                        </div>
+                        <div class="ai-col">
+                            <h4 class="ai-col-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+                                RECOMMENDATIONS
+                            </h4>
+                            <div id="aiRecommendations">
+                                <div class="info-skeleton"><div class="skeleton-line"></div><div class="skeleton-line"></div></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="overview-grid">
+                <!-- Domain Info Card -->
+                <div class="info-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon" style="--accent: #06b6d4;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+                                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3>Domain Info</h3>
+                                <span class="card-subtitle">Registration details</span>
+                            </div>
+                        </div>
+                        <span class="verified-badge" id="verifiedBadge" style="display: none;">Verified</span>
+                    </div>
+                    <div class="card-body" id="domainInfoBody">
+                        <div class="info-skeleton">
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- IP & Hosting Card -->
+                <div class="info-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon" style="--accent: #8b5cf6;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/>
+                                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                                    <line x1="6" y1="6" x2="6.01" y2="6"/>
+                                    <line x1="6" y1="18" x2="6.01" y2="18"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3>IP & Hosting</h3>
+                                <span class="card-subtitle">Server information</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body" id="ipHostingBody">
+                        <div class="info-skeleton">
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line w-75"></div>
+                            <div class="skeleton-rect"></div>
+                            <div class="skeleton-line"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- SSL Certificate Card -->
+                <div class="info-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon" style="--accent: #22c55e;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    <path d="M9 12l2 2 4-4"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3>SSL Certificate</h3>
+                                <span class="card-subtitle">Security & encryption</span>
+                            </div>
+                        </div>
+                        <span class="ssl-badge" id="sslBadge" style="display: none;">Valid</span>
+                    </div>
+                    <div class="card-body" id="sslBody">
+                        <div class="info-skeleton">
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Site identity (HTML/meta hints); not DNS — lives on Overview -->
+            <div id="headingAnalysisContainer" class="overview-identity-block">
+                <div class="info-skeleton">
+                    <div class="skeleton-line"></div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- DNS RECORDS TAB -->
+        <section class="tab-panel" id="tab-dns">
+            <div class="dns-toolbar">
+                <div class="dns-filters" id="dnsFilters">
+                    <button class="dns-filter-btn active" data-filter="ALL" onclick="filterDNS('ALL')">ALL</button>
+                    <button class="dns-filter-btn" data-filter="A" onclick="filterDNS('A')">A</button>
+                    <button class="dns-filter-btn" data-filter="AAAA" onclick="filterDNS('AAAA')">AAAA</button>
+                    <button class="dns-filter-btn" data-filter="MX" onclick="filterDNS('MX')">MX</button>
+                    <button class="dns-filter-btn" data-filter="TXT" onclick="filterDNS('TXT')">TXT</button>
+                    <button class="dns-filter-btn" data-filter="CNAME" onclick="filterDNS('CNAME')">CNAME</button>
+                    <button class="dns-filter-btn" data-filter="NS" onclick="filterDNS('NS')">NS</button>
+                    <button class="dns-filter-btn" data-filter="SOA" onclick="filterDNS('SOA')">SOA</button>
+                    <button class="dns-filter-btn" data-filter="CAA" onclick="filterDNS('CAA')">CAA</button>
+                </div>
+                <div class="dns-actions">
+                    <div class="search-input-sm">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="text" placeholder="Search records..." id="dnsSearch" oninput="searchDNS(this.value)">
+                    </div>
+                    <button class="export-btn" onclick="exportCSV()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Export CSV
+                    </button>
+                    <span class="record-count" id="dnsCount">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                        </svg>
+                        <span id="dnsCountText">Loading...</span>
+                    </span>
+                </div>
+            </div>
+            <div class="dns-table-wrapper">
+                <table class="dns-table" id="dnsTable">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Name</th>
+                            <th>Value</th>
+                            <th>TTL</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="dnsTableBody">
+                        <tr>
+                            <td colspan="5" class="loading-cell">
+                                <div class="spinner"></div>
+                                <span>Loading DNS records...</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        
+        <!-- SUBDOMAINS TAB -->
+        <section class="tab-panel" id="tab-subdomains">
+            <div class="subdomain-header">
+                <div class="subdomain-stats" id="subdomainStats">
+                    <span class="stat-text"><strong id="subTotalCount">—</strong> Subdomains Found</span>
+                    <span class="stat-active" id="subActiveCount">—</span>
+                </div>
+                <div class="subdomain-actions">
+                    <label class="toggle-label">
+                        <span>Web / TCP only</span>
+                        <input type="checkbox" id="activeOnlyToggle" onchange="toggleActiveOnly()">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <div class="search-input-sm">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                        <input type="text" placeholder="Search..." id="subdomainSearch" oninput="searchSubdomains(this.value)">
+                    </div>
+                    <button class="scan-btn sm-btn" id="rescanSubdomains" onclick="loadSubdomains()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/>
+                            <line x1="8" y1="12" x2="16" y2="12"/>
+                        </svg>
+                        Scan Subdomains
+                    </button>
+                </div>
+            </div>
+            <div class="subdomain-table-wrapper">
+                <table class="dns-table subdomain-table" id="subdomainTable">
+                    <thead>
+                        <tr>
+                            <th>Subdomain</th>
+                            <th>Status</th>
+                            <th>HTTP Code</th>
+                            <th>Response Time</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="subdomainTableBody">
+                        <tr>
+                            <td colspan="5" class="loading-cell">
+                                <div class="spinner"></div>
+                                <span>Click "Scan Subdomains" to start scanning...</span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        
+        <!-- SECURITY TAB -->
+        <section class="tab-panel" id="tab-security">
+            <div class="security-grid">
+                <!-- Risk Assessment -->
+                <div class="info-card security-risk-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon" style="--accent: #f59e0b;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3>Risk Assessment</h3>
+                                <span class="card-subtitle" id="securityCheckCount">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body security-risk-body" id="riskAssessmentBody">
+                        <div class="risk-gauge-large">
+                            <svg class="risk-gauge-lg" width="180" height="180" viewBox="0 0 180 180">
+                                <circle cx="90" cy="90" r="75" fill="none" stroke="#1e293b" stroke-width="12"/>
+                                <circle cx="90" cy="90" r="75" fill="none" stroke-width="12" 
+                                        stroke-linecap="round" id="securityRiskCircle"
+                                        stroke-dasharray="471.2" stroke-dashoffset="471.2"
+                                        transform="rotate(-90 90 90)"/>
+                                <text x="90" y="85" text-anchor="middle" class="risk-score-lg" id="securityScoreText">—</text>
+                                <text x="90" y="105" text-anchor="middle" class="risk-label-lg">/ 100</text>
+                            </svg>
+                        </div>
+                        <p class="risk-level-text" id="securityRiskLevel">Scanning...</p>
+                        <p class="risk-sublabel" id="securitySublabel">Based on security checks</p>
+                        <div class="security-summary" id="securitySummary">
+                            <div class="summary-item passed">
+                                <span class="summary-count" id="secPassedCount">—</span>
+                                <span class="summary-label">Passed</span>
+                            </div>
+                            <div class="summary-item failed">
+                                <span class="summary-count" id="secFailedCount">—</span>
+                                <span class="summary-label">Failed</span>
+                            </div>
+                            <div class="summary-item warnings">
+                                <span class="summary-count" id="secWarningCount">—</span>
+                                <span class="summary-label">Warnings</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Security Checklist -->
+                <div class="info-card security-checklist-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon" style="--accent: #22c55e;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                                    <polyline points="22 4 12 14.01 9 11.01"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3>Security Checklist</h3>
+                                <span class="card-subtitle">Automated security checks</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body" id="securityChecklistBody">
+                        <div class="info-skeleton">
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SSL CERTIFICATE TAB (Full Details) -->
+        <section class="tab-panel" id="tab-ssl">
+            <div id="sslFullDetails">
+                <div class="info-skeleton">
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- THREAT INTEL TAB -->
+        <section class="tab-panel" id="tab-threatintel">
+            <!-- Status Cards Row -->
+            <div class="threat-status-cards" id="threatStatusCards">
+                <div class="threat-status-card" id="threatMalwareCard">
+                    <div class="threat-status-icon safe">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                    </div>
+                    <h3>Malware Status</h3>
+                    <p>Scanning...</p>
+                    <span class="threat-badge safe">Scanning</span>
+                </div>
+                <div class="threat-status-card" id="threatPhishingCard">
+                    <div class="threat-status-icon safe">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                    </div>
+                    <h3>Phishing Risk</h3>
+                    <p>Scanning...</p>
+                    <span class="threat-badge safe">Scanning</span>
+                </div>
+                <div class="threat-status-card" id="threatBlacklistCard">
+                    <div class="threat-status-icon safe">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </div>
+                    <h3>Blacklist Status</h3>
+                    <p>Scanning...</p>
+                    <span class="threat-badge safe">Scanning</span>
+                </div>
+            </div>
+
+            <!-- Blacklist + Reputation Grid -->
+            <div class="threat-detail-grid">
+                <!-- Blacklist Checks -->
+                <div class="info-card blacklist-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon" style="--accent: #ef4444;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    <line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3>Blacklist Checks</h3>
+                                <span class="card-subtitle" id="blacklistSubtitle">Scanning registries...</span>
+                            </div>
+                        </div>
+                        <div class="blacklist-header-badges" id="blacklistBadges"></div>
+                    </div>
+                    <div class="card-body" id="blacklistChecklistBody">
+                        <div class="info-skeleton">
+                            <div class="skeleton-line"></div><div class="skeleton-line"></div>
+                            <div class="skeleton-line"></div><div class="skeleton-line"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Reputation + Threat Summary -->
+                <div class="threat-right-col">
+                    <!-- Reputation Score -->
+                    <div class="info-card reputation-card">
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <div class="card-icon" style="--accent: #06b6d4;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3>Reputation Score</h3>
+                                    <span class="card-subtitle">Based on global threat feeds</span>
+                                </div>
+                            </div>
+                            <div class="reputation-score-value" id="reputationScoreValue">—</div>
+                        </div>
+                        <div class="card-body" id="reputationBody">
+                            <div class="reputation-bar-container">
+                                <div class="reputation-bar" id="reputationBar" style="width: 0%"></div>
+                            </div>
+                            <div class="reputation-labels">
+                                <span class="reputation-label-danger">Dangerous</span>
+                                <span class="reputation-label-trust">Trustworthy</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Threat Intelligence Summary -->
+                    <div class="info-card threat-summary-card">
+                        <div class="card-header">
+                            <div class="card-title-group">
+                                <div class="card-icon" style="--accent: #8b5cf6;">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3>Threat Intelligence</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body" id="threatSummaryBody">
+                            <div class="info-skeleton">
+                                <div class="skeleton-line"></div><div class="skeleton-line"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MAIL SECURITY TAB -->
+        <section class="tab-panel" id="tab-mail">
+            <div id="mailForensicsContent">
+                <div class="info-skeleton">
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MONITORING TAB -->
+        <section class="tab-panel" id="tab-monitoring">
+            <!-- Stats Row -->
+            <div class="monitoring-stats" id="monitoringStats">
+                <div class="monitoring-stat-card" style="--stat-accent: #06b6d4;">
+                    <div class="stat-icon-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                        </svg>
+                    </div>
+                    <div class="stat-number" id="monStatMonitored">—</div>
+                    <div class="stat-name">Monitored</div>
+                </div>
+                <div class="monitoring-stat-card" style="--stat-accent: #22c55e;">
+                    <div class="stat-icon-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                        </svg>
+                    </div>
+                    <div class="stat-number" id="monStatOnline">—</div>
+                    <div class="stat-name">Online</div>
+                </div>
+                <div class="monitoring-stat-card" style="--stat-accent: #ef4444;">
+                    <div class="stat-icon-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                        </svg>
+                    </div>
+                    <div class="stat-number" id="monStatOffline">—</div>
+                    <div class="stat-name">Offline</div>
+                </div>
+                <div class="monitoring-stat-card" style="--stat-accent: #f59e0b;">
+                    <div class="stat-icon-wrapper">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </div>
+                    <div class="stat-number" id="monStatDegraded">—</div>
+                    <div class="stat-name">Degraded</div>
+                </div>
+            </div>
+
+            <!-- Main Monitoring Grid -->
+            <div class="monitoring-grid">
+                <!-- Watched Domains -->
+                <div class="info-card watched-domains-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon" style="--accent: #06b6d4;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3>Watched Domains</h3>
+                                <span class="card-subtitle" id="watchedDomainsCount">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="watched-actions">
+                            <input type="text" class="watched-domain-input" id="addDomainInput" placeholder="Add domain...">
+                            <button class="scan-btn sm-btn watch-add-btn" onclick="addWatchedDomain()">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Watch
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body watched-domains-body">
+                        <div class="watched-table-wrapper">
+                            <table class="dns-table watched-table" id="watchedDomainsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Domain</th>
+                                        <th>Status</th>
+                                        <th>Uptime</th>
+                                        <th>SSL Days</th>
+                                        <th>Response</th>
+                                        <th>Last Check</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="watchedDomainsBody">
+                                    <tr>
+                                        <td colspan="6" class="loading-cell">
+                                            <div class="spinner"></div>
+                                            <span>Loading monitoring data...</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Response Time -->
+                <div class="info-card response-time-card">
+                    <div class="card-header">
+                        <div class="card-title-group">
+                            <div class="card-icon" style="--accent: #22c55e;">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3>Response Time</h3>
+                                <span class="card-subtitle" id="responseTimeDomain">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body" id="responseTimeBody">
+                        <canvas id="responseTimeChart" width="400" height="180"></canvas>
+                        <div class="response-stats" id="responseStats">
+                            <div class="info-skeleton"><div class="skeleton-line"></div></div>
+                        </div>
+                        <div class="last-24h-section" id="last24hSection">
+                            <div class="info-skeleton"><div class="skeleton-line"></div></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- HISTORY TAB -->
+        <section class="tab-panel" id="tab-history">
+            <div class="history-container">
+                <div class="history-header">
+                    <div class="card-title-group">
+                        <div class="card-icon" style="--accent: #06b6d4;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                            </svg>
+                        </div>
+                        <div>
+                            <h3>Domain History</h3>
+                            <span class="card-subtitle" id="historyCount">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="timeline" id="historyTimeline">
+                    <div class="info-skeleton">
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line"></div>
+                        <div class="skeleton-line"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- TECH STACK TAB -->
+        <section class="tab-panel" id="tab-techstack">
+            <div class="techstack-header">
+                <div class="techstack-title-group">
+                    <h3>Technology Intel</h3>
+                    <p class="techstack-subtitle">Forensic signature detection</p>
+                </div>
+                <div class="techstack-actions">
+                    <div class="deep-scan-toggle-container" title="Execute JavaScript for higher accuracy (slower)">
+                        <span class="toggle-text">Deep Scan</span>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="deepScanToggle" onchange="runTechScan(true)">
+                            <span class="toggle-slider round"></span>
+                        </label>
+                    </div>
+                    <button class="rescan-tech-btn" onclick="runTechScan(true)">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                        Rescan
+                    </button>
+                </div>
+            </div>
+            <div class="techstack-container" id="techstackContainer">
+                <div class="info-skeleton">
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line"></div>
+                    <div class="skeleton-line"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TOOLS TAB -->
+        <section class="tab-panel" id="tab-tools">
+            <div class="tools-grid">
+                <div class="tool-card" id="toolEmailLookup">
+                    <div class="tool-icon" style="--tool-color: #06b6d4;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+                        </svg>
+                    </div>
+                    <h3>Email Lookup</h3>
+                    <p>Find emails associated with a domain</p>
+                    <button class="tool-launch-btn" onclick="launchTool('email_lookup', 'Email Lookup', 'Find emails associated with a domain', '#06b6d4')">Launch Tool →</button>
+                </div>
+                <div class="tool-card" id="toolReverseIP">
+                    <div class="tool-icon" style="--tool-color: #ef4444;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                        </svg>
+                    </div>
+                    <h3>Reverse IP Lookup</h3>
+                    <p>Find all domains hosted on an IP</p>
+                    <button class="tool-launch-btn" onclick="launchTool('reverse_ip', 'Reverse IP Lookup', 'Find all domains hosted on an IP', '#ef4444')">Launch Tool →</button>
+                </div>
+                <div class="tool-card" id="toolUsernameChecker">
+                    <div class="tool-icon" style="--tool-color: #f59e0b;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </div>
+                    <h3>Username Checker</h3>
+                    <p>Check username availability across platforms</p>
+                    <button class="tool-launch-btn" onclick="launchTool('username_checker', 'Username Checker', 'Check username availability across platforms', '#f59e0b')">Launch Tool →</button>
+                </div>
+                <div class="tool-card" id="toolWhoisLookup">
+                    <div class="tool-icon" style="--tool-color: #8b5cf6;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                    </div>
+                    <h3>WHOIS Lookup</h3>
+                    <p>Full WHOIS record for any domain</p>
+                    <button class="tool-launch-btn" onclick="launchTool('whois_lookup', 'WHOIS Lookup', 'Full WHOIS record for any domain', '#8b5cf6')">Launch Tool →</button>
+                </div>
+                <div class="tool-card" id="toolPortScanner">
+                    <div class="tool-icon" style="--tool-color: #ef4444;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/>
+                            <line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/>
+                        </svg>
+                    </div>
+                    <h3>Port Scanner</h3>
+                    <p>Scan open ports on any host</p>
+                    <button class="tool-launch-btn" onclick="launchTool('port_scanner', 'Port Scanner', 'Scan open ports on any host', '#ef4444')">Launch Tool →</button>
+                </div>
+                <div class="tool-card" id="toolHTTPHeaders">
+                    <div class="tool-icon" style="--tool-color: #06b6d4;">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+                        </svg>
+                    </div>
+                    <h3>HTTP Headers</h3>
+                    <p>Inspect HTTP response headers</p>
+                    <button class="tool-launch-btn" onclick="launchTool('http_headers', 'HTTP Headers', 'Inspect HTTP response headers', '#06b6d4')">Launch Tool →</button>
+                </div>
+            </div>
+
+            <!-- Tool Execution Panel -->
+            <div id="toolExecutionPanel" class="tool-execution-panel" style="display: none;">
+                <div class="tool-exec-header">
+                    <div class="tool-exec-info">
+                        <div class="tool-exec-icon" id="toolExecIcon"></div>
+                        <div class="tool-exec-text">
+                            <h3 id="toolExecTitle">Tool Name</h3>
+                            <p id="toolExecDesc">Tool description goes here</p>
+                        </div>
+                    </div>
+                    <button class="tool-exec-close" onclick="closeToolPanel()">&times;</button>
+                </div>
+                <div class="tool-exec-body">
+                    <div class="tool-input-group">
+                        <input type="text" id="toolInput" class="tool-input" placeholder="Enter value...">
+                        <button id="toolRunBtn" class="tool-run-btn" onclick="runTool()">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                            </svg>
+                            Run
+                        </button>
+                    </div>
+                    <div id="toolResult" class="tool-result" style="display: none;">
+                        <div class="tool-result-header">
+                            <span>Results</span>
+                            <button class="copy-result-btn" onclick="copyToolResult()">Copy</button>
+                        </div>
+                        <pre id="toolOutput"></pre>
+                    </div>
+                    <div id="toolLoading" class="tool-loading" style="display: none;">
+                        <div class="spinner-sm"></div>
+                        <span>Processing request...</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+    </main>
+</div>
+
+<!-- ============================================
+     COMPARE MODAL
+     ============================================ -->
+<div class="modal-overlay" id="compareModalOverlay" onclick="closeCompareModal(event)">
+    <div class="modal-container compare-modal">
+        <div class="modal-header">
+            <div class="modal-title-group">
+                <div class="modal-icon">
+                    <svg width="22" height="22" viewBox="0 0 48 48" fill="none">
+                        <circle cx="24" cy="24" r="20" stroke="url(#gradM)" stroke-width="2.5" fill="none"/>
+                        <circle cx="24" cy="24" r="12" stroke="url(#gradM)" stroke-width="1.5" fill="none" opacity="0.6"/>
+                        <circle cx="24" cy="24" r="4" fill="url(#gradM)"/>
+                        <defs><linearGradient id="gradM" x1="0" y1="0" x2="48" y2="48"><stop offset="0%" stop-color="#06b6d4"/><stop offset="100%" stop-color="#8b5cf6"/></linearGradient></defs>
+                    </svg>
+                </div>
+                <div>
+                    <h2>Domain Comparison</h2>
+                    <p class="modal-subtitle">Side-by-side analysis</p>
+                </div>
+            </div>
+            <button class="modal-close-btn" onclick="closeCompareModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="compare-input-section">
+                <label class="compare-label">Compare <span class="accent-text" id="compareSourceDomain">{{ domain }}</span> against:</label>
+                <div class="compare-input-row">
+                    <input type="text" class="compare-input" id="compareDomainInput" placeholder="github.com" onkeydown="if(event.key==='Enter')runComparison()">
+                    <button class="scan-btn compare-run-btn" onclick="runComparison()">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                        Compare
+                    </button>
+                </div>
+            </div>
+            <div class="compare-results" id="compareResults" style="display:none;">
+                <div class="compare-domain-tabs" id="compareDomainTabs"></div>
+                <div class="compare-table" id="compareTable"></div>
+            </div>
+            <div class="compare-loading" id="compareLoading" style="display:none;">
+                <div class="spinner"></div>
+                <span>Scanning and comparing domains...</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================
+     EXPORT MODAL
+     ============================================ -->
+<div class="modal-overlay" id="exportModalOverlay" onclick="closeExportModal(event)">
+    <div class="modal-container export-modal">
+        <div class="modal-header">
+            <div class="modal-title-group">
+                <div class="modal-icon">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                </div>
+                <div>
+                    <h2>Export Report</h2>
+                    <p class="modal-subtitle" id="exportDomainLabel">{{ domain }}</p>
+                </div>
+            </div>
+            <button class="modal-close-btn" onclick="closeExportModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="export-format-section">
+                <label class="export-section-label">Export Format</label>
+                <div class="export-format-toggle">
+                    <button class="format-btn active" id="formatPDF" onclick="setExportFormat('pdf')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        PDF
+                    </button>
+                    <button class="format-btn" id="formatCSV" onclick="setExportFormat('csv')">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+                        CSV
+                    </button>
+                </div>
+            </div>
+            <div class="export-sections-area">
+                <div class="export-sections-header">
+                    <label class="export-section-label">Include Sections</label>
+                    <div class="export-select-actions">
+                        <a href="#" class="export-select-link active" onclick="selectAllSections(event)">All</a>
+                        <span class="export-select-sep">·</span>
+                        <a href="#" class="export-select-link" onclick="selectNoSections(event)">None</a>
+                    </div>
+                </div>
+                <div class="export-section-list" id="exportSectionList">
+                    <label class="export-section-item active">
+                        <div class="esi-left">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                            <span>Domain Overview</span>
+                        </div>
+                        <input type="checkbox" class="export-checkbox" data-section="overview" checked>
+                    </label>
+                    <label class="export-section-item active">
+                        <div class="esi-left">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/></svg>
+                            <span>DNS Records</span>
+                        </div>
+                        <input type="checkbox" class="export-checkbox" data-section="dns" checked>
+                    </label>
+                    <label class="export-section-item active">
+                        <div class="esi-left">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49"/></svg>
+                            <span>Subdomains</span>
+                        </div>
+                        <input type="checkbox" class="export-checkbox" data-section="subdomains" checked>
+                    </label>
+                    <label class="export-section-item active">
+                        <div class="esi-left">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            <span>Security Analysis</span>
+                        </div>
+                        <input type="checkbox" class="export-checkbox" data-section="security" checked>
+                    </label>
+                    <label class="export-section-item">
+                        <div class="esi-left">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            <span>Threat Intelligence</span>
+                        </div>
+                        <input type="checkbox" class="export-checkbox" data-section="threatintel">
+                    </label>
+                    <label class="export-section-item active">
+                        <div class="esi-left">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                            <span>Tech Stack</span>
+                        </div>
+                        <input type="checkbox" class="export-checkbox" data-section="techstack" checked>
+                    </label>
+                    <label class="export-section-item">
+                        <div class="esi-left">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            <span>Domain History</span>
+                        </div>
+                        <input type="checkbox" class="export-checkbox" data-section="history">
+                    </label>
+                    <label class="export-section-item">
+                        <div class="esi-left">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+                            <span>OSINT Data</span>
+                        </div>
+                        <input type="checkbox" class="export-checkbox" data-section="osint">
+                    </label>
+                </div>
+            </div>
+            <button class="export-download-btn" id="exportDownloadBtn" onclick="downloadExport()">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Download PDF (<span id="exportSectionCount">5</span> sections)
+            </button>
+        </div>
+    </div>
+</div>
+
+<input type="hidden" id="scanDomain" value="{{ domain }}">
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize scan when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        const domain = document.getElementById('scanDomain').value;
+        initScan(domain);
+    });
+</script>
+{% endblock %}
