@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, send_file
+/*from flask import Flask, render_template, request, jsonify, send_file
 from config import Config
 from domain_scanner.whois_lookup import lookup_whois
 from domain_scanner.dns_lookup import lookup_dns, get_ip_addresses
@@ -15,7 +15,7 @@ from domain_scanner.utils import clean_domain_name as clean_domain, safe_request
 from domain_scanner.tools import (
     check_ports, get_http_headers, check_usernames, 
     reverse_ip_lookup, lookup_emails
-)
+) 
 import re
 import datetime
 import io
@@ -561,4 +561,16 @@ def api_compare(domain1, domain2):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))*/
+
+
+from flask import Flask
+
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "DomainXray Running Successfully"
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
