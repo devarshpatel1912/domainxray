@@ -5,6 +5,5 @@ requests
 ipwhois
 fpdf2
 python-Wappalyzer
-playwright
 Flask
 gunicorn
