@@ -5,3 +5,4 @@ requests
 ipwhois
 fpdf2
 python-Wappalyzer
+setuptools
