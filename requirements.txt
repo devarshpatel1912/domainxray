@@ -1,10 +1,8 @@
-flask>=3.0
-python-whois
-dnspython
+Flask
+gunicorn
 requests
-ipwhois
-fpdf2
+dnspython
+python-whois
 python-Wappalyzer
 setuptools
-gunicorn
-flask
+wheel
