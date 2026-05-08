@@ -24,10 +24,10 @@ def clean_domain_name(domain):
     return domain
 
 def get_dns_resolver(timeout=None):
-    """Returns a pre-configured DNS resolver with tight timeouts."""
+    """Returns a pre-configured DNS resolver with robust timeouts."""
     resolver = dns.resolver.Resolver()
     resolver.timeout = timeout or DNS_TIMEOUT
-    resolver.lifetime = timeout or DNS_LIFETIME
+    resolver.lifetime = (timeout or DNS_LIFETIME) * 2 # Allow more time for lifetime
     return resolver
 
 def safe_requests_get(url, timeout=DEFAULT_TIMEOUT, **kwargs):

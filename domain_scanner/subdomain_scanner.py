@@ -20,12 +20,19 @@ def load_wordlist(path):
 
 
 def _resolve_ip(resolver, full_domain):
-    """Resolve A record, then AAAA if no IPv4 (common for modern hosts)."""
+    """Resolve A record, then AAAA, with socket fallback."""
     try:
         answers = resolver.resolve(full_domain, 'A')
         return answers[0].address
     except Exception:
         pass
+    
+    try:
+        # Fallback to system resolver for maximum compatibility
+        return socket.gethostbyname(full_domain)
+    except Exception:
+        pass
+
     try:
         answers = resolver.resolve(full_domain, 'AAAA')
         return answers[0].address

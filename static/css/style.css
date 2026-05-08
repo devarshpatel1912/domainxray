@@ -635,6 +635,10 @@ a:hover {
     font-weight: 700;
 }
 
+.risk-score-val {
+    display: none;
+}
+
 /* ============================================
    Tab Navigation
    ============================================ */
@@ -2806,6 +2810,79 @@ a:hover {
     box-shadow: 0 0 8px rgba(245, 158, 11, 0.4);
 }
 
+/* Delete Button — Ghost style */
+.remove-wd-btn {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    color: rgba(239, 68, 68, 0.65) !important;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 0 auto;
+    padding: 0;
+    box-shadow: none !important;
+}
+
+.remove-wd-btn:hover {
+    background: rgba(239, 68, 68, 0.12) !important;
+    border-color: rgba(239, 68, 68, 0.2) !important;
+    color: #ef4444 !important;
+}
+
+.remove-wd-btn svg {
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+}
+
+/* Centering Actions Column */
+.watched-table th:last-child,
+.watched-table td:last-child {
+    text-align: center;
+    width: 60px;
+}
+
+/* Refresh Scan Button — Ghost Style */
+.refresh-scan-btn {
+    background: transparent !important;
+    border: 1px solid transparent !important;
+    color: var(--text-dim) !important;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-left: 8px;
+    padding: 0;
+    box-shadow: none !important;
+}
+
+.refresh-scan-btn:hover {
+    background: rgba(6, 182, 212, 0.1) !important;
+    color: var(--cyan) !important;
+    border-color: rgba(6, 182, 212, 0.2) !important;
+}
+
+.refresh-scan-btn.spinning svg {
+    animation: spin-refresh 1s linear infinite;
+    color: var(--cyan) !important;
+}
+
+@keyframes spin-refresh {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+
+
 .subdomain-status.degraded-status {
     color: var(--orange);
 }
@@ -3044,15 +3121,6 @@ a:hover {
 
     .tools-grid {
         grid-template-columns: repeat(2, 1fr);
-    }
-
-    .header-action-btns {
-        display: none;
-    }
-
-    .domain-header-right {
-        flex-direction: column;
-        gap: 12px;
     }
 }
 
@@ -4600,3 +4668,501 @@ input:checked + .toggle-slider:before {
     color: var(--text-muted);
     font-family: 'JetBrains Mono', monospace;
 }
+
+/* ============================================
+   Mobile Bottom Navigation
+   ============================================ */
+
+.mobile-bottom-nav {
+    display: none;
+}
+
+/* ============================================
+   MOBILE RESPONSIVE — Phone UI
+   ============================================ */
+
+@media (max-width: 768px) {
+
+    /* === Bottom Navigation Bar === */
+    .mobile-bottom-nav {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 200;
+        background: rgba(12, 17, 32, 0.95);
+        border-top: 1px solid var(--border);
+        padding: 8px 4px calc(8px + env(safe-area-inset-bottom, 0px));
+        align-items: center;
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        gap: 0;
+        scrollbar-width: none;
+    }
+
+    .mobile-bottom-nav::-webkit-scrollbar {
+        display: none;
+    }
+
+    .mobile-nav-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 3px;
+        background: none;
+        border: none;
+        color: var(--text-dim);
+        font-size: 0.62rem;
+        font-weight: 500;
+        font-family: inherit;
+        cursor: pointer;
+        padding: 4px 8px;
+        transition: color 0.2s ease;
+        min-width: 50px;
+        flex-shrink: 0;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .mobile-nav-item svg {
+        opacity: 0.45;
+        transition: opacity 0.2s ease;
+    }
+
+    .mobile-nav-item.active {
+        color: var(--cyan);
+    }
+
+    .mobile-nav-item.active svg {
+        opacity: 1;
+        color: var(--cyan);
+    }
+
+    /* === Hide Desktop Tab Nav === */
+    .tab-nav {
+        display: none;
+    }
+
+    /* === Bottom padding for content above bottom nav === */
+    .app-container {
+        padding-bottom: calc(68px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* === Navbar (Top) === */
+    .navbar {
+        padding: 8px 10px;
+        gap: 8px;
+    }
+
+    .nav-brand { display: none; }
+
+    .logo-icon-sm svg { width: 26px; height: 26px; }
+
+    .nav-search {
+        flex: 1;
+        max-width: none;
+        padding: 0 10px;
+    }
+
+    .nav-search input {
+        font-size: 0.85rem;
+        padding: 7px 0;
+    }
+
+    .nav-scan-btn {
+        padding: 0;
+        font-size: 0;
+        gap: 0;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        justify-content: center;
+    }
+
+    .theme-toggle-btn { display: none; }
+
+    /* === Domain Header — Card matching screenshot === */
+    .domain-header {
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px;
+        gap: 10px;
+        border-bottom: none;
+        background: var(--bg-card);
+        margin: 10px 12px 0;
+        border-radius: var(--radius-lg);
+        border: 1px solid var(--border);
+    }
+
+    .domain-header-left { flex: 1; min-width: 0; }
+
+    .domain-title-row {
+        gap: 0;
+        margin-bottom: 2px;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .domain-name { 
+        font-size: 1.15rem; 
+        font-weight: 700; 
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        display: block;
+    }
+    .copy-btn { display: none; }
+
+    .status-badge {
+        font-size: 0.68rem;
+        padding: 2px 10px;
+        margin-top: 2px;
+    }
+
+    .domain-meta { display: none; }
+
+    /* Header right — action icons + risk score */
+    .domain-header-right {
+        flex-direction: row;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+
+    .header-action-btns {
+        display: flex;
+        gap: 4px;
+    }
+
+    /* Colored icon buttons matching screenshot */
+    .header-action-btn {
+        padding: 0;
+        font-size: 0;
+        gap: 0;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+    }
+
+    .header-action-btn svg { width: 14px; height: 14px; }
+
+    .watch-btn {
+        background: rgba(139, 92, 246, 0.2);
+        border-color: rgba(139, 92, 246, 0.3);
+        color: var(--purple);
+    }
+
+    .compare-btn {
+        background: rgba(59, 130, 246, 0.2);
+        border-color: rgba(59, 130, 246, 0.3);
+        color: var(--blue);
+    }
+
+    .export-action-btn {
+        background: rgba(100, 116, 139, 0.2);
+        border-color: rgba(100, 116, 139, 0.3);
+        color: var(--text-secondary);
+    }
+
+    /* Risk score — show as "Risk" label + large number */
+    #riskScoreArea {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+    }
+
+    .risk-gauge-container {
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 0;
+    }
+
+    .risk-gauge-container .risk-gauge { display: none; }
+
+    .risk-label {
+        text-align: right;
+    }
+
+    .risk-title {
+        font-size: 0.7rem;
+        display: block;
+        color: var(--text-muted);
+    }
+
+    .risk-score-val {
+        display: block;
+        font-size: 1.35rem;
+        font-weight: 800;
+        line-height: 1;
+        margin-bottom: 2px;
+    }
+
+    .risk-level {
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        opacity: 0.9;
+    }
+
+    /* === Tab Content === */
+    .tab-content { padding: 10px 12px; }
+
+    /* === AI Insights Banner === */
+    .ai-insights-banner { margin-bottom: 12px; }
+
+    .ai-insights-header {
+        padding: 12px 14px;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .ai-insights-title-group { gap: 8px; }
+    .ai-insights-title-group h2 { font-size: 1rem; }
+
+    .ai-icon { width: 32px; height: 32px; border-radius: 8px; }
+    .ai-icon svg { width: 18px; height: 18px; }
+    .ai-badge { font-size: 0.6rem; padding: 2px 7px; }
+    .ai-generated-time { font-size: 0.72rem; }
+    .ai-insights-body { padding: 14px; }
+    .ai-insights-grid { grid-template-columns: 1fr; gap: 14px; }
+    .ai-col-title { font-size: 0.7rem; margin-bottom: 8px; }
+    .ai-summary-text { font-size: 0.82rem; }
+    .ai-issue-item { font-size: 0.82rem; }
+    .ai-reco-list { font-size: 0.82rem; }
+
+    /* === Overview Grid === */
+    .overview-grid { grid-template-columns: 1fr; gap: 12px; }
+    .overview-grid .info-card:last-child { grid-column: auto; }
+
+    /* === Info Cards === */
+    .card-header { padding: 12px 14px; }
+    .card-icon { width: 34px; height: 34px; border-radius: 8px; }
+    .card-icon svg { width: 18px; height: 18px; }
+    .card-header h3 { font-size: 0.92rem; }
+    .card-subtitle { font-size: 0.7rem; }
+    .card-body { padding: 12px 14px; }
+    .info-row { padding: 8px 0; }
+    .info-label { font-size: 0.8rem; }
+    .info-value { font-size: 0.82rem; }
+
+    /* === SSL Summary === */
+    .ssl-gauge-main { gap: 1rem; }
+    .ssl-info-rows { gap: 8px; }
+    .ssl-info-row { font-size: 0.82rem; }
+    .ssl-tab-link { font-size: 0.75rem; }
+
+    /* === IP Display === */
+    .ip-display { font-size: 1.1rem; }
+    .ipv6-display { font-size: 0.68rem; }
+    .map-container { height: 160px; }
+
+    /* === DNS Tab — Scrollable table matching screenshot === */
+    .dns-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        margin-bottom: 10px;
+    }
+
+    .dns-filters {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 3px;
+        gap: 2px;
+        scrollbar-width: none;
+    }
+    .dns-filters::-webkit-scrollbar { display: none; }
+
+    .dns-filter-btn {
+        padding: 5px 10px;
+        font-size: 0.72rem;
+        flex-shrink: 0;
+    }
+
+    .dns-actions { flex-wrap: wrap; gap: 8px; }
+    .search-input-sm input { width: 90px; }
+    .export-btn { font-size: 0.75rem; padding: 5px 10px; }
+
+    /* DNS table — horizontally scrollable like screenshots */
+    .dns-table-wrapper {
+        border-radius: var(--radius);
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .dns-table {
+        min-width: 580px;
+    }
+
+    .dns-table td {
+        padding: 14px 12px;
+        font-size: 0.82rem;
+        white-space: nowrap;
+    }
+
+    .dns-table thead th {
+        padding: 12px 12px;
+        font-size: 0.72rem;
+    }
+
+    .dns-table tbody tr {
+        border-bottom: 1px solid var(--border);
+    }
+
+    .dns-value {
+        font-size: 0.78rem;
+        max-width: 180px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* === Subdomains — scrollable === */
+    .subdomain-header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 12px 14px;
+    }
+
+    .subdomain-actions {
+        flex-wrap: wrap;
+        width: 100%;
+        gap: 8px;
+        align-items: center;
+    }
+
+    /* Compact scan button on mobile */
+    .subdomain-actions .scan-btn {
+        padding: 6px 12px;
+        font-size: 0.75rem;
+        border-radius: var(--radius);
+        gap: 5px;
+    }
+
+    .subdomain-actions .scan-btn svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    .subdomain-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .subdomain-table {
+        min-width: 520px;
+    }
+
+    /* === Security Tab === */
+    .security-grid { grid-template-columns: 1fr; gap: 14px; }
+    .security-risk-card .card-body { padding: 16px; }
+    .risk-gauge-large svg { width: 140px; height: 140px; }
+    .security-summary { gap: 8px; }
+    .summary-item { padding: 10px; }
+    .summary-count { font-size: 1.2rem; }
+    .security-check-item { padding: 10px 12px; }
+    .check-text h4 { font-size: 0.82rem; }
+    .check-text p { font-size: 0.72rem; }
+
+    /* === Threat Intel === */
+    .threat-status-cards { grid-template-columns: 1fr; gap: 10px; }
+    .threat-detail-grid { grid-template-columns: 1fr; }
+    .threat-status-card { padding: 20px 16px; }
+
+    /* === Monitoring === */
+    .monitoring-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .monitoring-stat-card { padding: 14px; }
+    .stat-number { font-size: 1.4rem; }
+    .monitoring-grid { grid-template-columns: 1fr; }
+
+    .watched-actions { gap: 6px; }
+    .watched-domain-input { width: 120px; font-size: 0.8rem; padding: 6px 10px; }
+    .watch-add-btn { padding: 6px 12px; font-size: 0.78rem; border-radius: 8px; }
+
+
+    /* === History === */
+    .timeline::before { left: 19px; }
+    .timeline-icon { width: 30px; height: 30px; }
+    .timeline-icon svg { width: 14px; height: 14px; }
+    .timeline-item { gap: 12px; }
+    .timeline-content { padding: 12px 14px; }
+    .timeline-title h4 { font-size: 0.85rem; }
+    .timeline-desc { font-size: 0.78rem; }
+
+    /* === Tools === */
+    .tools-grid { grid-template-columns: 1fr; gap: 12px; }
+    .tool-card { padding: 20px 16px; }
+    .tool-execution-panel { margin-top: 14px; }
+    .tool-exec-header { padding: 14px 16px; }
+    .tool-exec-body { padding: 14px 16px; }
+    .tool-input-group { flex-direction: column; gap: 8px; }
+    .tool-run-btn { padding: 10px; justify-content: center; }
+
+    /* === Tech Stack === */
+    .techstack-header { flex-direction: column; gap: 10px; align-items: flex-start; }
+    .techstack-actions { width: 100%; justify-content: flex-start; }
+    .tech-grid-container { padding: 16px; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .tech-card { padding: 16px 10px; }
+    .tech-card-name { font-size: 0.9rem; }
+    .tech-section-header { padding: 16px; }
+    .tech-section-title-group h3 { font-size: 1rem; }
+    .tech-category-header { padding: 10px 16px 0; }
+
+    /* === SSL Full Details === */
+    .ssl-header-premium { flex-direction: column; gap: 12px; align-items: flex-start; }
+    .ssl-tab-grid-top { flex-direction: column; }
+    .ssl-status-cards { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .ssl-status-card { padding: 12px 8px; }
+
+    /* === Modals — sheet from bottom === */
+    .modal-container {
+        width: 100%;
+        max-width: 100%;
+        max-height: 90vh;
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        margin-top: auto;
+    }
+    .modal-header { padding: 16px; }
+    .modal-header h2 { font-size: 1.1rem; }
+    .modal-body { padding: 16px; }
+    .compare-modal { max-width: 100%; }
+    .cmp-row { grid-template-columns: 80px 1fr 1fr; gap: 8px; padding: 10px 0; }
+    .cmp-label { font-size: 0.7rem; }
+    .cmp-val { font-size: 0.78rem; }
+
+    /* === Nameservers === */
+    .nameserver-item { font-size: 0.72rem; padding: 6px 10px; }
+
+    /* === Landing Page === */
+    .landing-content { padding: 1.5rem; }
+    .landing-title { font-size: 2rem; }
+    .landing-subtitle { font-size: 1rem; }
+    .landing-description { font-size: 0.85rem; margin-bottom: 2rem; }
+    .search-wrapper { padding: 4px 4px 4px 14px; gap: 8px; }
+    .search-wrapper input { font-size: 0.92rem; }
+    .feature-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .feature-card { padding: 1rem 0.8rem; }
+    .feature-card h3 { font-size: 0.85rem; }
+    .feature-card p { font-size: 0.72rem; }
+    .feature-icon { width: 40px; height: 40px; }
+}
+
+/* Extra Small phones */
+@media (max-width: 380px) {
+    .mobile-nav-item { min-width: 42px; padding: 4px 4px; }
+    .mobile-nav-item span { font-size: 0.55rem; }
+    .mobile-nav-item svg { width: 18px; height: 18px; }
+    .domain-name { font-size: 1rem; }
+    .header-action-btn { width: 30px; height: 30px; }
+    .feature-grid { grid-template-columns: 1fr; }
+    .monitoring-stats { grid-template-columns: 1fr; }
+    .tech-grid-container { grid-template-columns: 1fr; }
+    .ssl-status-cards { grid-template-columns: 1fr; }
+}
+

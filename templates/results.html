@@ -116,6 +116,11 @@
             </div>
             <div id="riskScoreArea">
                 <div class="risk-gauge-container" id="riskGauge" style="display: none;">
+                    <button class="refresh-scan-btn" onclick="refreshCurrentScan()" title="Refresh Data">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                    </button>
                     <svg class="risk-gauge" width="80" height="80" viewBox="0 0 80 80">
                         <circle cx="40" cy="40" r="34" fill="none" stroke="#1e293b" stroke-width="6"/>
                         <circle cx="40" cy="40" r="34" fill="none" stroke-width="6" 
@@ -127,6 +132,7 @@
                     </svg>
                     <div class="risk-label">
                         <span class="risk-title">Risk Score</span>
+                        <span class="risk-score-val" id="riskScoreVal">—</span>
                         <span class="risk-level" id="riskLevel">—</span>
                     </div>
                 </div>
@@ -369,6 +375,9 @@
                     <button class="dns-filter-btn" data-filter="NS" onclick="filterDNS('NS')">NS</button>
                     <button class="dns-filter-btn" data-filter="SOA" onclick="filterDNS('SOA')">SOA</button>
                     <button class="dns-filter-btn" data-filter="CAA" onclick="filterDNS('CAA')">CAA</button>
+                    <button class="dns-filter-btn" data-filter="SRV" onclick="filterDNS('SRV')">SRV</button>
+                    <button class="dns-filter-btn" data-filter="DS" onclick="filterDNS('DS')">DS</button>
+                    <button class="dns-filter-btn" data-filter="DNSKEY" onclick="filterDNS('DNSKEY')">DNSKEY</button>
                 </div>
                 <div class="dns-actions">
                     <div class="search-input-sm">
@@ -759,6 +768,7 @@
                                         <th>SSL Days</th>
                                         <th>Response</th>
                                         <th>Last Check</th>
+                                        <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="watchedDomainsBody">
@@ -964,6 +974,81 @@
         </section>
         
     </main>
+
+    <!-- Mobile Bottom Navigation -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNav">
+        <button class="mobile-nav-item active" data-tab="overview" onclick="switchTab('overview')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
+                <rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+            </svg>
+            <span>Home</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="dns" onclick="switchTab('dns')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/>
+                <polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>
+                <line x1="4" y1="4" x2="9" y2="9"/>
+            </svg>
+            <span>DNS</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="subdomains" onclick="switchTab('subdomains')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/>
+            </svg>
+            <span>Subs</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="security" onclick="switchTab('security')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <span>Security</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="ssl" onclick="switchTab('ssl')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+            <span>SSL</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="threatintel" onclick="switchTab('threatintel')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                <line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+            </svg>
+            <span>Threat</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="mail" onclick="switchTab('mail')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+            </svg>
+            <span>Mail</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="monitoring" onclick="switchTab('monitoring')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+            <span>Monitor</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="history" onclick="switchTab('history')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span>History</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="techstack" onclick="switchTab('techstack')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
+            </svg>
+            <span>Tech</span>
+        </button>
+        <button class="mobile-nav-item" data-tab="tools" onclick="switchTab('tools')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+            </svg>
+            <span>Tools</span>
+        </button>
+    </nav>
 </div>
 
 <!-- ============================================

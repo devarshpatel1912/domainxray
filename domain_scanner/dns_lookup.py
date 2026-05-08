@@ -6,64 +6,81 @@ from .utils import clean_domain_name, get_dns_resolver
 
 
 def lookup_dns(domain):
-    """Fetch all DNS records for a domain."""
+    """Fetch all important DNS records for a domain with hybrid system/fallback logic."""
     domain = clean_domain_name(domain)
     records = []
-    record_types = ['A', 'AAAA', 'MX', 'TXT', 'CNAME', 'NS', 'SOA', 'CAA']
+    # Expanded list of important record types
+    record_types = ['A', 'AAAA', 'MX', 'TXT', 'CNAME', 'NS', 'SOA', 'CAA', 'SRV', 'DS', 'DNSKEY']
     
-    resolver = get_dns_resolver()
-    
+    system_resolver = get_dns_resolver()
+    fallback_resolver = dns.resolver.Resolver()
+    fallback_resolver.nameservers = ['8.8.8.8', '1.1.1.1']
+    fallback_resolver.timeout = 3
+    fallback_resolver.lifetime = 6
+
     for rtype in record_types:
-        try:
-            answers = resolver.resolve(domain, rtype)
-            for rdata in answers:
-                record = {
-                    'type': rtype,
-                    'name': domain,
-                    'value': '',
-                    'ttl': answers.rrset.ttl,
-                    'status': 'Active'
-                }
-                
-                if rtype == 'A':
-                    record['value'] = rdata.address
-                elif rtype == 'AAAA':
-                    record['value'] = rdata.address
-                elif rtype == 'MX':
-                    record['value'] = f"{rdata.preference} {rdata.exchange}"
-                elif rtype == 'TXT':
-                    record['value'] = ' '.join([s.decode('utf-8', errors='replace') if isinstance(s, bytes) else s for s in rdata.strings])
-                elif rtype == 'CNAME':
-                    record['value'] = str(rdata.target)
-                elif rtype == 'NS':
-                    record['value'] = str(rdata.target)
-                elif rtype == 'SOA':
-                    record['value'] = f"{rdata.mname} {rdata.rname}"
-                elif rtype == 'CAA':
-                    record['value'] = f'{rdata.flags} {rdata.tag.decode() if isinstance(rdata.tag, bytes) else rdata.tag} "{rdata.value}"'
-                
-                records.append(record)
-                
-        except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.resolver.NoNameservers, dns.resolver.Timeout):
-            continue
-        except Exception:
-            continue
+        success = False
+        for resolver in [system_resolver, fallback_resolver]:
+            try:
+                answers = resolver.resolve(domain, rtype)
+                for rdata in answers:
+                    record = {
+                        'type': rtype,
+                        'name': domain,
+                        'value': '',
+                        'ttl': answers.rrset.ttl,
+                        'status': 'Active'
+                    }
+                    
+                    if rtype == 'A' or rtype == 'AAAA':
+                        record['value'] = rdata.address
+                    elif rtype == 'MX':
+                        record['value'] = f"{rdata.preference} {rdata.exchange}"
+                    elif rtype == 'TXT':
+                        record['value'] = ' '.join([s.decode('utf-8', errors='replace') if isinstance(s, bytes) else s for s in rdata.strings])
+                    elif rtype == 'CNAME' or rtype == 'NS':
+                        record['value'] = str(rdata.target)
+                    elif rtype == 'SOA':
+                        record['value'] = f"{rdata.mname} {rdata.rname} (Serial: {rdata.serial})"
+                    elif rtype == 'CAA':
+                        record['value'] = f'{rdata.flags} {rdata.tag.decode() if isinstance(rdata.tag, bytes) else rdata.tag} "{rdata.value}"'
+                    elif rtype == 'SRV':
+                        record['value'] = f"{rdata.priority} {rdata.weight} {rdata.port} {rdata.target}"
+                    elif rtype == 'DS':
+                        record['value'] = f"{rdata.key_tag} {rdata.algorithm} {rdata.digest_type} {rdata.digest.hex().upper()}"
+                    elif rtype == 'DNSKEY':
+                        record['value'] = f"{rdata.flags} {rdata.protocol} {rdata.algorithm} [Key Data]"
+                    else:
+                        record['value'] = str(rdata)
+                    
+                    records.append(record)
+                success = True
+                break
+            except (dns.resolver.NoAnswer, dns.resolver.NXDOMAIN, dns.resolver.NoNameservers, dns.resolver.Timeout):
+                continue
+            except Exception:
+                continue
+        
+        if rtype == 'A' and not success:
+            try:
+                ip = socket.gethostbyname(domain)
+                records.append({
+                    'type': 'A', 'name': domain, 'value': ip, 'ttl': 3600, 'status': 'Active'
+                })
+            except: pass
     
-    # Check for DMARC record
-    try:
-        dmarc_domain = f'_dmarc.{domain}'
-        answers = resolver.resolve(dmarc_domain, 'TXT')
-        for rdata in answers:
-            value = ' '.join([s.decode('utf-8', errors='replace') if isinstance(s, bytes) else s for s in rdata.strings])
-            records.append({
-                'type': 'TXT',
-                'name': dmarc_domain,
-                'value': value,
-                'ttl': answers.rrset.ttl,
-                'status': 'Active'
-            })
-    except Exception:
-        pass
+    # Check for DMARC record at _dmarc.domain
+    for resolver in [system_resolver, fallback_resolver]:
+        try:
+            dmarc_domain = f'_dmarc.{domain}'
+            answers = resolver.resolve(dmarc_domain, 'TXT')
+            for rdata in answers:
+                value = ' '.join([s.decode('utf-8', errors='replace') if isinstance(s, bytes) else s for s in rdata.strings])
+                records.append({
+                    'type': 'TXT', 'name': dmarc_domain, 'value': value, 'ttl': answers.rrset.ttl, 'status': 'Active'
+                })
+            break
+        except: continue
     
     return records
 

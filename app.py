@@ -1,4 +1,4 @@
-''' from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file
 from config import Config
 from domain_scanner.whois_lookup import lookup_whois
 from domain_scanner.dns_lookup import lookup_dns, get_ip_addresses
@@ -10,20 +10,36 @@ from domain_scanner.tech_detector import detect_technologies
 from domain_scanner.history_tracker import build_history
 from domain_scanner.threat_intel import analyze_threats
 from domain_scanner.monitoring import get_monitoring_data
+from domain_scanner.storage import add_watched_domain, remove_watched_domain
 import html as html_std
 from domain_scanner.utils import clean_domain_name as clean_domain, safe_requests_get
 from domain_scanner.tools import (
     check_ports, get_http_headers, check_usernames, 
     reverse_ip_lookup, lookup_emails
-) 
+)
 import re
 import datetime
 import io
 import os
 from fpdf import FPDF
 
+import os
+import json
+import time
+
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# 'Live Only' mode: Caching to disk is disabled.
+REPORTS_DIR = 'reports'
+
+def get_cached_data(domain, type):
+    """Caching disabled in Live Only mode."""
+    return None
+
+def set_cached_data(domain, type, data):
+    """No-op in Live Only mode."""
+    pass
 
 
 @app.route('/')
@@ -50,20 +66,22 @@ def scan():
 def api_overview(domain):
     """API endpoint for overview data (WHOIS + IP + SSL)."""
     domain = clean_domain(domain)
+    force = request.args.get('force', 'false').lower() == 'true'
     
+    if not force:
+        cached = get_cached_data(domain, 'overview')
+        if cached: return jsonify(cached)
+
     # WHOIS data
     whois_data = lookup_whois(domain)
-    
     # IP addresses
     ipv4, ipv6 = get_ip_addresses(domain)
-    
     # IP geolocation
     ip_info = lookup_ip(ipv4) if ipv4 else {}
-    
     # SSL certificate
     ssl_info = check_ssl(domain)
     
-    return jsonify({
+    result = {
         'whois': whois_data,
         'ip': {
             'ipv4': ipv4,
@@ -71,27 +89,38 @@ def api_overview(domain):
             'info': ip_info
         },
         'ssl': ssl_info
-    })
+    }
+    set_cached_data(domain, 'overview', result)
+    return jsonify(result)
 
 
 @app.route('/api/scan/dns/<domain>')
 def api_dns(domain):
     """API endpoint for DNS records."""
     domain = clean_domain(domain)
+    cached = get_cached_data(domain, 'dns')
+    if cached: return jsonify(cached)
+
     records = lookup_dns(domain)
-    return jsonify({'records': records, 'total': len(records)})
+    result = {'records': records, 'total': len(records)}
+    set_cached_data(domain, 'dns', result)
+    return jsonify(result)
 
 
 @app.route('/api/scan/subdomains/<domain>')
 def api_subdomains(domain):
     """API endpoint for subdomain scanning."""
     domain = clean_domain(domain)
+    cached = get_cached_data(domain, 'subdomains')
+    if cached: return jsonify(cached)
+
     result = scan_subdomains(
         domain,
         app.config['SUBDOMAIN_WORDLIST'],
         max_threads=app.config['SUBDOMAIN_THREADS'],
         timeout=app.config['SUBDOMAIN_TIMEOUT']
     )
+    set_cached_data(domain, 'subdomains', result)
     return jsonify(result)
 
 
@@ -99,8 +128,15 @@ def api_subdomains(domain):
 def api_security(domain):
     """API endpoint for security checks."""
     domain = clean_domain(domain)
+    force = request.args.get('force', 'false').lower() == 'true'
+    
+    if not force:
+        cached = get_cached_data(domain, 'security')
+        if cached: return jsonify(cached)
+
     ssl_info = check_ssl(domain)
     result = check_security(domain, ssl_info)
+    set_cached_data(domain, 'security', result)
     return jsonify(result)
 
 
@@ -108,9 +144,13 @@ def api_security(domain):
 def api_history(domain):
     """API endpoint for domain history."""
     domain = clean_domain(domain)
+    cached = get_cached_data(domain, 'history')
+    if cached: return jsonify(cached)
+
     whois_data = lookup_whois(domain)
     ssl_data = check_ssl(domain)
     result = build_history(whois_data, ssl_data)
+    set_cached_data(domain, 'history', result)
     return jsonify(result)
 
 
@@ -119,7 +159,13 @@ def api_techstack(domain):
     """API endpoint for technology stack detection."""
     domain = clean_domain(domain)
     is_deep = request.args.get('deep', 'false').lower() == 'true'
+    
+    cache_key = 'techstack_deep' if is_deep else 'techstack'
+    cached = get_cached_data(domain, cache_key)
+    if cached: return jsonify(cached)
+
     result = detect_technologies(domain, deep_scan=is_deep)
+    set_cached_data(domain, cache_key, result)
     return jsonify(result)
 
 
@@ -127,11 +173,33 @@ def api_techstack(domain):
 def api_threatintel(domain):
     """API endpoint for threat intelligence."""
     domain = clean_domain(domain)
+    cached = get_cached_data(domain, 'threatintel')
+    if cached: return jsonify(cached)
+
     # Get security data to feed into reputation scoring
     ssl_info = check_ssl(domain)
     security_data = check_security(domain, ssl_info)
     result = analyze_threats(domain, security_data)
+    set_cached_data(domain, 'threatintel', result)
     return jsonify(result)
+
+
+@app.route('/api/watched', methods=['POST'])
+def api_add_watched():
+    data = request.json
+    domain = data.get('domain')
+    if not domain:
+        return jsonify({'error': 'No domain provided'}), 400
+    domain = clean_domain(domain)
+    added = add_watched_domain(domain)
+    return jsonify({'success': added})
+
+
+@app.route('/api/watched/<domain>', methods=['DELETE'])
+def api_remove_watched(domain):
+    domain = clean_domain(domain)
+    removed = remove_watched_domain(domain)
+    return jsonify({'success': removed})
 
 
 @app.route('/api/scan/monitoring/<domain>')
@@ -173,6 +241,9 @@ def api_site_identity(domain):
     if not domain:
         return jsonify({'ok': False, 'error': 'Invalid domain'}), 400
 
+    cached = get_cached_data(domain, 'site_identity')
+    if cached: return jsonify(cached)
+
     timeout = app.config.get('HTTP_TIMEOUT', 10)
     last_err = None
     for scheme in ('https', 'http'):
@@ -180,29 +251,36 @@ def api_site_identity(domain):
         try:
             resp = safe_requests_get(url, timeout=timeout, allow_redirects=True)
             body = resp.text[:800000]
-            return jsonify({
+            result = {
                 'ok': True,
                 'final_url': resp.url,
                 'http_status': resp.status_code,
                 'title': _parse_html_title(body),
                 'meta_description': _parse_html_meta_description(body),
-            })
+            }
+            set_cached_data(domain, 'site_identity', result)
+            return jsonify(result)
         except Exception as e:
             last_err = str(e)
             continue
 
-    return jsonify({
+    result = {
         'ok': False,
         'error': last_err or 'Could not fetch homepage',
         'title': None,
         'meta_description': None,
-    })
+    }
+    # Don't cache errors for too long, but for consistency we still set it
+    set_cached_data(domain, 'site_identity', result)
+    return jsonify(result)
 
 
 @app.route('/api/scan/ai-insights/<domain>')
 def api_ai_insights(domain):
     """API endpoint for AI-powered insights."""
     domain = clean_domain(domain)
+    cached = get_cached_data(domain, 'ai_insights')
+    if cached: return jsonify(cached)
 
     # Gather data from multiple sources
     ssl_info = check_ssl(domain)
@@ -211,6 +289,7 @@ def api_ai_insights(domain):
 
     # Build AI insights from aggregated data
     insights = _build_ai_insights(domain, security_data, ssl_info, whois_data)
+    set_cached_data(domain, 'ai_insights', insights)
     return jsonify(insights)
 
 
@@ -559,18 +638,6 @@ def api_compare(domain1, domain2):
 
     return jsonify({'domain1': data1, 'domain2': data2})
 
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000))) '''
-
-
-from flask import Flask
-
-app = Flask(__name__)
-
-@app.route("/")
-def home():
-    return "DomainXray Running Successfully"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

@@ -2,9 +2,21 @@
 
 import time
 import random
+import hashlib
 import concurrent.futures
 from .utils import clean_domain_name, safe_requests_get
 from .ssl_checker import check_ssl
+from .storage import get_watched_domains
+
+
+def _deterministic_seed(key):
+    """Return a deterministic integer seed from a string key.
+
+    Uses MD5 (not for security, just for consistency) so the seed is
+    identical across different Python processes, machines, and OS versions.
+    Python's built-in hash() is randomised per process (PYTHONHASHSEED).
+    """
+    return int(hashlib.md5(key.encode('utf-8')).hexdigest(), 16) % (10 ** 9)
 
 
 # Default watched domains for demonstration
@@ -23,8 +35,10 @@ def get_monitoring_data(domain):
 
     # Build watched domains list — include the scanned domain at the top
     watched_list = [domain]
-    for d in DEFAULT_WATCHED:
-        if d != domain and len(watched_list) < 5:
+    saved_watched = get_watched_domains()
+    
+    for d in saved_watched:
+        if d != domain and len(watched_list) < 6:
             watched_list.append(d)
 
     # Fetch status for all watched domains in parallel
@@ -137,13 +151,13 @@ def _simulate_uptime(domain, degraded=False, offline=False):
     """Generate realistic uptime percentage based on domain status."""
     if offline:
         # Use consistent seed for consistent results per domain
-        random.seed(hash(domain) % 10000)
+        random.seed(_deterministic_seed(domain))
         return f"{random.uniform(75, 88):.1f}%"
     elif degraded:
-        random.seed(hash(domain) % 10000)
+        random.seed(_deterministic_seed(domain))
         return f"{random.uniform(90, 96):.1f}%"
     else:
-        random.seed(hash(domain) % 10000)
+        random.seed(_deterministic_seed(domain))
         return f"{random.uniform(99, 100):.2f}%"
 
 
@@ -159,14 +173,18 @@ def _get_response_history(domain, watched_domains):
     if actual_rt is None:
         actual_rt = 150
 
+    # Generate a deterministic base response time for this domain (100-500ms)
+    random.seed(_deterministic_seed(domain + 'base_rt'))
+    base_rt = random.randint(100, 500)
+
     # Generate simulated 7-day history (for chart rendering)
-    random.seed(hash(domain + 'history') % 10000)
+    random.seed(_deterministic_seed(domain + 'history'))
     days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
     history = []
     for day in days:
-        # Vary around the actual response time
+        # Vary around the base response time
         variance = random.uniform(0.7, 1.4)
-        rt = int(actual_rt * variance)
+        rt = int(base_rt * variance)
         history.append({'day': day, 'value': rt})
 
     # Calculate stats
@@ -175,11 +193,11 @@ def _get_response_history(domain, watched_domains):
 
     # Simulate uptime and incidents
     uptime_7d = _simulate_uptime(domain)
-    random.seed(hash(domain + 'incidents') % 10000)
+    random.seed(_deterministic_seed(domain + 'incidents'))
     incidents = random.randint(0, 3)
 
     # Last 24h uptime bar data (48 half-hour slots)
-    random.seed(hash(domain + 'slots') % 10000)
+    random.seed(_deterministic_seed(domain + 'slots'))
     last_24h = []
     for i in range(48):
         # 95% chance of being up

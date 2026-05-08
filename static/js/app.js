@@ -62,6 +62,14 @@ function switchTab(tabName) {
         btn.classList.toggle('active', btn.dataset.tab === tabName);
     });
     
+    // Update mobile bottom nav items
+    document.querySelectorAll('.mobile-nav-item').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tab === tabName);
+        if (btn.dataset.tab === tabName) {
+            btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+        }
+    });
+    
     // Update tab panels
     document.querySelectorAll('.tab-panel').forEach(panel => {
         panel.classList.toggle('active', panel.id === `tab-${tabName}`);
@@ -100,7 +108,7 @@ function initScan(domain) {
     // Load overview data (WHOIS + IP + SSL)
     loadOverview(domain);
     
-    // Load DNS records
+    // Load DNS records (DNS changes are often slower, but we can add force here too if needed)
     loadDNS(domain);
     
     // Load security checks
@@ -120,8 +128,8 @@ function initScan(domain) {
 // Overview Tab
 // ============================================
 
-function loadOverview(domain) {
-    fetch(`/api/scan/overview/${domain}`)
+function loadOverview(domain, force = false) {
+    return fetch(`/api/scan/overview/${domain}${force ? '?force=true' : ''}`)
         .then(r => r.json())
         .then(data => {
             renderDomainHeader(data);
@@ -951,8 +959,8 @@ function searchSubdomains(query) {
 // Security Tab
 // ============================================
 
-function loadSecurity(domain) {
-    fetch(`/api/scan/security/${domain}`)
+function loadSecurity(domain, force = false) {
+    return fetch(`/api/scan/security/${domain}${force ? '?force=true' : ''}`)
         .then(r => r.json())
         .then(data => {
             renderSecurityRisk(data);
@@ -1052,6 +1060,7 @@ function updateHeaderRiskScore(data) {
     const circle = document.getElementById('riskCircle');
     const scoreText = document.getElementById('riskScoreText');
     const levelText = document.getElementById('riskLevel');
+    const valText = document.getElementById('riskScoreVal');
     
     gauge.style.display = 'flex';
     
@@ -1063,19 +1072,14 @@ function updateHeaderRiskScore(data) {
         circle.style.strokeDashoffset = offset;
         circle.style.transition = 'stroke-dashoffset 1.5s ease';
         
-        if (score >= 80) {
-            circle.style.stroke = '#22c55e';
-            levelText.style.color = '#22c55e';
-        } else if (score >= 50) {
-            circle.style.stroke = '#f59e0b';
-            levelText.style.color = '#f59e0b';
-        } else {
-            circle.style.stroke = '#ef4444';
-            levelText.style.color = '#ef4444';
-        }
+        const riskColor = score >= 80 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444';
+        circle.style.stroke = riskColor;
+        levelText.style.color = riskColor;
+        if (valText) valText.style.color = riskColor;
     }, 100);
     
     scoreText.textContent = score;
+    if (valText) valText.textContent = score;
     levelText.textContent = data.risk_level;
 }
 
@@ -1283,6 +1287,11 @@ function renderWatchedDomains(domains) {
             <td><span class="ssl-days-badge">${d.ssl_days}</span></td>
             <td>${d.response_time ? `<span style="color: ${rtColor}; font-weight: 600;">${d.response_time}ms</span>` : '<span style="color: var(--text-muted)">N/A</span>'}</td>
             <td class="text-muted">${d.last_check}</td>
+            <td>
+                <button class="remove-wd-btn" onclick="removeWatchedDomain('${d.domain}')" title="Remove from watch list">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+                </button>
+            </td>
         </tr>`;
     }).join('');
 }
@@ -1411,13 +1420,67 @@ function renderResponseTime(data) {
     `;
 }
 
+function refreshCurrentScan() {
+    const btn = document.querySelector('.refresh-scan-btn');
+    if (btn) btn.classList.add('spinning');
+    
+    // Clear cache state
+    tabDataLoaded = {};
+    
+    // Perform forced re-scans for critical components
+    Promise.all([
+        loadOverview(currentDomain, true),
+        loadSecurity(currentDomain, true),
+        loadDNS(currentDomain),
+        loadAIInsights(currentDomain)
+    ]).finally(() => {
+        setTimeout(() => {
+            if (btn) btn.classList.remove('spinning');
+        }, 1000);
+    });
+}
+
 function addWatchedDomain() {
-    // Placeholder - in a real app this would add to a watch list
     const input = document.getElementById('addDomainInput');
-    if (input.value.trim()) {
-        alert(`Domain "${input.value.trim()}" would be added to watch list.`);
-        input.value = '';
-    }
+    const domain = input.value.trim();
+    if (!domain) return;
+
+    // Call API to add domain
+    fetch('/api/watched', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: domain })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            input.value = '';
+            // Reload monitoring data to show new domain
+            loadMonitoring();
+        } else {
+            alert('Domain already in watch list or failed to add.');
+        }
+    })
+    .catch(err => {
+        console.error('Error adding watched domain:', err);
+        alert('Error adding domain to watch list.');
+    });
+}
+
+
+function removeWatchedDomain(domain) {
+    if (!confirm(`Remove ${domain} from watch list?`)) return;
+
+    fetch(`/api/watched/${domain}`, {
+        method: 'DELETE'
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            loadMonitoring();
+        }
+    })
+    .catch(err => console.error('Error removing domain:', err));
 }
 
 // ============================================

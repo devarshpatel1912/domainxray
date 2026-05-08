@@ -1,9 +1,9 @@
-Flask
-gunicorn
-requests
-dnspython
+flask>=3.0
 python-whois
-python-Wappalyzer
-setuptools
-wheel
+dnspython
+requests
 ipwhois
+fpdf2
+python-Wappalyzer
+playwright
+gunicorn
