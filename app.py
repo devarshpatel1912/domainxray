@@ -6,7 +6,7 @@ from domain_scanner.subdomain_scanner import scan_subdomains
 from domain_scanner.ssl_checker import check_ssl
 from domain_scanner.ip_lookup import lookup_ip
 from domain_scanner.security_checker import check_security
-from domain_scanner.tech_detector import detect_technologies
+
 from domain_scanner.history_tracker import build_history
 from domain_scanner.threat_intel import analyze_threats
 from domain_scanner.monitoring import get_monitoring_data
@@ -151,21 +151,6 @@ def api_history(domain):
     ssl_data = check_ssl(domain)
     result = build_history(whois_data, ssl_data)
     set_cached_data(domain, 'history', result)
-    return jsonify(result)
-
-
-@app.route('/api/scan/techstack/<domain>')
-def api_techstack(domain):
-    """API endpoint for technology stack detection."""
-    domain = clean_domain(domain)
-    is_deep = request.args.get('deep', 'false').lower() == 'true'
-    
-    cache_key = 'techstack_deep' if is_deep else 'techstack'
-    cached = get_cached_data(domain, cache_key)
-    if cached: return jsonify(cached)
-
-    result = detect_technologies(domain, deep_scan=is_deep)
-    set_cached_data(domain, cache_key, result)
     return jsonify(result)
 
 
@@ -552,21 +537,7 @@ def export_pdf():
                 pdf.cell(30, 7, status_text, 1)
                 pdf.cell(80, 7, str(check['description']), 1, True)
 
-        # --- Tech Stack Section ---
-        if 'techstack' in sections:
-            pdf.section_header('Technology Intelligence')
-            tech_data = detect_technologies(domain)
-            detected = tech_data.get('detected', [])
-            
-            if detected:
-                for tech in detected:
-                    pdf.set_font('helvetica', 'B', 10)
-                    pdf.cell(0, 7, f"• {tech['name']} ({tech['category']})", ln=True)
-                    pdf.set_font('helvetica', 'I', 9)
-                    pdf.cell(0, 5, f"  Evidence: {tech.get('evidence', 'General fingerprinting')}", ln=True)
-                    pdf.ln(2)
-            else:
-                pdf.cell(0, 7, 'No significant technology fingerprints detected.', ln=True)
+
 
         buffer = io.BytesIO()
         pdf_output = pdf.output()
@@ -600,7 +571,7 @@ def api_compare(domain1, domain2):
         ip_info = lookup_ip(ipv4) if ipv4 else {}
         ssl_info = check_ssl(domain)
         security_data = check_security(domain, ssl_info)
-        tech_data = detect_technologies(domain)
+
 
         # Count open ports from security checks
         open_ports = 0
@@ -612,8 +583,7 @@ def api_compare(domain1, domain2):
                 ports = _re.findall(r'\d+', desc)
                 open_ports = len(ports) if ports else 1
 
-        detected_techs = tech_data.get('detected', [])
-        tech_names = [t['name'] for t in detected_techs[:5]]
+
 
         return {
             'domain': domain,
@@ -629,8 +599,7 @@ def api_compare(domain1, domain2):
             'ssl_days': ssl_info.get('days_remaining', 0),
             'ssl_issuer': ssl_info.get('issuer', 'Unknown'),
             'ssl_algorithm': ssl_info.get('algorithm', 'N/A'),
-            'open_ports': open_ports,
-            'tech_stack': tech_names
+            'open_ports': open_ports
         }
 
     data1 = _gather_domain_data(domain1)

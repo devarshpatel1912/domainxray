@@ -76,9 +76,7 @@ function switchTab(tabName) {
     });
     
     // Lazy-load tab data if needed
-    if (tabName === 'techstack' && !tabDataLoaded.techstack) {
-        loadTechStack(currentDomain);
-    }
+
     if (tabName === 'ssl' && !tabDataLoaded.ssl) {
         loadSSLDetails(currentDomain);
     }
@@ -121,7 +119,7 @@ function initScan(domain) {
     loadAIInsights(domain);
     
     // Load tech stack
-    loadTechStack(domain);
+
 }
 
 // ============================================
@@ -1548,183 +1546,7 @@ function getTimelineIcon(type) {
 // Tech Stack Tab
 // ============================================
 
-function loadTechStack(domain, isDeep = false) {
-    const container = document.getElementById('techstackContainer');
-    
-    // Set toggle state if it exists
-    const toggle = document.getElementById('deepScanToggle');
-    if (toggle) toggle.checked = isDeep;
-    
-    // If not deep scan and we already have data, don't reload
-    if (container.querySelector('.techstack-grid') && !isDeep) return;
-    
-    tabDataLoaded.techstack = true;
-    
-    // Show skeleton during fetch
-    container.innerHTML = `
-        <div class="info-skeleton">
-            <div class="skeleton-line"></div>
-            <div class="skeleton-line"></div>
-            <div class="skeleton-line"></div>
-        </div>`;
 
-    fetch(`/api/scan/techstack/${domain}?deep=${isDeep}`)
-        .then(r => r.json())
-        .then(data => {
-            renderTechStack(data);
-        })
-        .catch(err => {
-            console.error('Tech stack error:', err);
-            container.innerHTML = `
-                <div class="error-message">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    Failed to load technology intelligence
-                </div>`;
-        });
-}
-
-function runTechScan(rescan = false) {
-    const domain = document.getElementById('scanDomain').value;
-    const isDeepScanner = document.getElementById('deepScanToggle').checked;
-    loadTechStack(domain, isDeepScanner);
-}
-
-function renderTechStack(data) {
-    const container = document.getElementById('techstackContainer');
-    
-    const detected = data.detected || [];
-    const notDetected = data.not_detected || [];
-    const counts = data.counts || { detected: 0, not_detected: 0 };
-
-    if (detected.length === 0 && notDetected.length === 0) {
-        container.innerHTML = `
-            <div class="no-tech-found">
-                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
-                </svg>
-                <p>No technology intelligence available</p>
-            </div>`;
-        return;
-    }
-
-    let html = '';
-
-    // --- Detected Section (grouped by category) ---
-    if (detected.length > 0) {
-        // Group by category
-        const categories = {};
-        detected.forEach(tech => {
-            const cat = tech.category || 'Other';
-            if (!categories[cat]) categories[cat] = [];
-            categories[cat].push(tech);
-        });
-
-        html += `
-        <div class="tech-section-wrapper">
-            <div class="tech-grid-container techstack-grid">
-                ${detected.map(tech => renderTechCard(tech)).join('')}
-            </div>
-        </div>`;
-    }
-
-    // --- Not Detected Section (collapsed) ---
-    if (notDetected.length > 0) {
-        html += `
-        <div class="not-detected-section">
-            <div class="tech-section-wrapper">
-                <div class="tech-section-header tech-section-header-collapsible" onclick="this.closest('.not-detected-section').classList.toggle('expanded')">
-                    <div class="tech-section-title-group">
-                        <div class="tech-section-icon" style="background: rgba(255,255,255,0.05); color: var(--text-muted);">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                        </div>
-                        <div>
-                            <h3>Not Detected</h3>
-                            <div class="tech-section-subtitle">${notDetected.length} technologies checked but not found</div>
-                        </div>
-                    </div>
-                    <div class="tech-collapse-arrow">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="6 9 12 15 18 9"/></svg>
-                    </div>
-                </div>
-                <div class="tech-collapsed-content">
-                    <div class="tech-grid-container">
-                        ${notDetected.map(tech => renderTechCard(tech, true)).join('')}
-                    </div>
-                </div>
-            </div>
-        </div>`;
-    }
-
-    container.innerHTML = html;
-}
-
-function renderTechCard(tech, isNotDetected = false) {
-    const iconSvg = getTechIcon(tech.icon);
-    const accentColor = isNotDetected ? 'var(--text-dim)' : (tech.color || 'var(--cyan)');
-    const accentColorDim = isNotDetected ? 'rgba(255,255,255,0.05)' : (tech.color_dim || 'rgba(6, 182, 212, 0.1)');
-    
-    // Determine evidence source
-    const isDeepHit = tech.evidence && (
-        tech.evidence.toLowerCase().includes('deep') || 
-        tech.evidence.toLowerCase().includes('playwright') ||
-        tech.evidence.toLowerCase().includes('browser')
-    );
-
-    return `
-    <div class="tech-card ${isNotDetected ? 'not-detected' : ''}" style="--tech-color: ${accentColor}; --tech-color-dim: ${accentColorDim}">
-        <div class="tech-card-header">
-            <div class="tech-icon-box">
-                ${iconSvg}
-            </div>
-            <div class="tech-card-info">
-                <h4>${tech.name}</h4>
-                <div class="tech-category-badge">${tech.category || 'Technology'}</div>
-            </div>
-        </div>
-        <div class="tech-card-body">
-            ${tech.evidence ? `
-                <div class="tech-evidence-pill ${isDeepHit ? 'deep-hit' : ''}">
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                        ${isDeepHit ? '<path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>' : '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>'}
-                    </svg>
-                    ${isDeepHit ? 'Forensic Deep Scan hit' : 'Static analysis match'}
-                </div>
-            ` : ''}
-        </div>
-        <div class="tech-card-footer">
-            <div class="tech-status-row">
-                <span class="tech-detected-badge" style="color: ${isNotDetected ? 'var(--text-muted)' : 'var(--green)'};">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                        ${isNotDetected ? '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>' : '<polyline points="20 6 9 17 4 12"/>'}
-                    </svg>
-                    ${isNotDetected ? 'Checked' : 'Detected'}
-                </span>
-                <span class="tech-version">${tech.version || ''}</span>
-            </div>
-        </div>
-    </div>`;
-}
-
-function getTechIcon(iconName) {
-    const icons = {
-        'atom': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><path d="M10.3 21a8.7 8.7 0 0 1-7.1-7.1 8.7 8.7 0 0 1 7.1-7.1 8.7 8.7 0 0 1 7.1 7.1 8.7 8.7 0 0 1-7.1 7.1z"/><path d="m14 9.7a8.7 8.7 0 0 1-7.1-7.1 8.7 8.7 0 0 1 7.1 7.1 8.7 8.7 0 0 1 7.1 7.1 8.7 8.7 0 0 1-7.1 7.1z"/><path d="M14 14.3a8.7 8.7 0 0 1-7.1 7.1 8.7 8.7 0 0 1-7.1-7.1 8.7 8.7 0 0 1 7.1-7.1 8.7 8.7 0 0 1 7.1 7.1z"/></svg>',
-        'file-code': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><path d="m10 13-2 2 2 2"/><path d="m14 17 2-2-2-2"/></svg>',
-        'server': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2" ry="2"/><rect x="2" y="14" width="20" height="8" rx="2" ry="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>',
-        'cloud': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19A5.5 5.5 0 0 0 18 8a7 7 0 1 0-13.8 1.5A4.5 4.5 0 1 0 5 18.5h12.5z"/></svg>',
-        'bar-chart': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>',
-        'tool': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>',
-        'database': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>',
-        'credit-card': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>',
-        'lock': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
-        'container': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="2" y1="7" x2="22" y2="7"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="17" x2="22" y2="17"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/></svg>',
-        'cart': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>',
-        'layout': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>',
-        'users': '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'
-    };
-    return icons[iconName] || '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/></svg>';
-}
 
 // Utility Functions
 // ============================================
@@ -1822,12 +1644,6 @@ function renderComparisonResults(data) {
         return `<span class="cmp-age-bar" style="background: ${color};">${age}</span>`;
     }
 
-    // Tech stack tags
-    function techTags(techs) {
-        if (!techs || techs.length === 0) return '<span class="cmp-muted">None detected</span>';
-        return techs.map(t => `<span class="cmp-tech-tag">${t}</span>`).join('');
-    }
-
     // Open ports display
     function portDisplay(count) {
         const color = count === 0 ? 'var(--green)' : 'var(--orange)';
@@ -1852,8 +1668,7 @@ function renderComparisonResults(data) {
         { label: 'SSL Status', v1: d1.ssl_status, v2: d2.ssl_status },
         { label: 'SSL Days Left', v1: sslDaysBadge(d1.ssl_days), v2: sslDaysBadge(d2.ssl_days), isHtml: true },
         { label: 'SSL Issuer', v1: d1.ssl_issuer, v2: d2.ssl_issuer },
-        { label: 'Open Ports', v1: portDisplay(d1.open_ports), v2: portDisplay(d2.open_ports), isHtml: true },
-        { label: 'Tech Stack', v1: techTags(d1.tech_stack), v2: techTags(d2.tech_stack), isHtml: true },
+        { label: 'Open Ports', v1: portDisplay(d1.open_ports), v2: portDisplay(d2.open_ports), isHtml: true }
     ];
 
     table.innerHTML = rows.map(row => `
@@ -2032,17 +1847,7 @@ function downloadCSVExport(sections) {
         csv += `\n`;
     }
 
-    // Tech Stack
-    if (sections.includes('techstack')) {
-        csv += `=== TECH STACK ===\n`;
-        const techCards = document.querySelectorAll('.tech-card:not(.not-detected)');
-        techCards.forEach(card => {
-            const name = card.querySelector('.tech-card-name')?.textContent?.trim() || '';
-            const cat = card.querySelector('.tech-card-category')?.textContent?.trim() || '';
-            csv += `${name},${cat},Detected\n`;
-        });
-        csv += `\n`;
-    }
+
 
     // Download
     const blob = new Blob([csv], { type: 'text/csv' });

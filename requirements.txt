@@ -4,6 +4,4 @@ dnspython
 requests
 ipwhois
 fpdf2
-python-Wappalyzer
-playwright
 gunicorn
