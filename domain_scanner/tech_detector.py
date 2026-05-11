@@ -1,7 +1,7 @@
 import re
 import warnings
 import asyncio
-from Wappalyzer import Wappalyzer, WebPage
+#from Wappalyzer import Wappalyzer, WebPage
 from .utils import safe_requests_get
 from .deep_detector import run_deep_scan
 
@@ -100,7 +100,7 @@ TECH_SIGNATURES = {
 
 _TECH_MAP = {t['name']: t for t in TECH_WATCHLIST}
 
-def detect_technologies(domain, deep_scan=False):
+'''def detect_technologies(domain, deep_scan=False):
     """Hybrid detection: Fast Static (requests) + Optional Forensic (Playwright)."""
     detected_list = []
     seen = set()
@@ -205,4 +205,4 @@ def detect_technologies(domain, deep_scan=False):
         'detected': detected_list,
         'not_detected': not_detected_list,
         'counts': {'detected': len(detected_list), 'not_detected': len(not_detected_list)}
-    }
+    }'''
