@@ -14,7 +14,7 @@ try:
     _wappalyzer = Wappalyzer.latest()
 except Exception:
     # Fallback to internal signatures if network is down or error
-    _wappalyzer = Wappalyzer.new()
+    #_wappalyzer = Wappalyzer.new()
 
 # ============================================
 # Comprehensive Technology Watchlist
@@ -206,3 +206,8 @@ _TECH_MAP = {t['name']: t for t in TECH_WATCHLIST}
         'not_detected': not_detected_list,
         'counts': {'detected': len(detected_list), 'not_detected': len(not_detected_list)}
     }'''
+
+    def detect_technologies(domain):
+    return {
+        "status": "Technology detection temporarily disabled"
+    }
