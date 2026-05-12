@@ -38,13 +38,12 @@
                     <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
                 </svg>
             </button>
-            <button class="scan-btn nav-scan-btn" onclick="document.querySelector('.nav-search').submit()">
+            <button class="scan-btn nav-scan-btn" onclick="document.querySelector('.nav-search').submit()" title="Start Scan">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <circle cx="12" cy="12" r="10"/>
                     <line x1="12" y1="8" x2="12" y2="16"/>
                     <line x1="8" y1="12" x2="16" y2="12"/>
                 </svg>
-                Scan
             </button>
         </div>
     </nav>
@@ -116,11 +115,6 @@
             </div>
             <div id="riskScoreArea">
                 <div class="risk-gauge-container" id="riskGauge" style="display: none;">
-                    <button class="refresh-scan-btn" onclick="refreshCurrentScan()" title="Refresh Data">
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                        </svg>
-                    </button>
                     <svg class="risk-gauge" width="80" height="80" viewBox="0 0 80 80">
                         <circle cx="40" cy="40" r="34" fill="none" stroke="#1e293b" stroke-width="6"/>
                         <circle cx="40" cy="40" r="34" fill="none" stroke-width="6" 
